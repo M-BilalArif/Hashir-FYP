@@ -1,3 +1,6 @@
+
+https://sepolia.etherscan.io/address/0xFb2f98FE4E05D75d8e070b015b1CCFd3bB2D488C#code
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -38,6 +41,9 @@ contract FYP_Contract is Ownable {
 
     // Vendor address => array of products
     mapping(address => Product[]) public vendorProducts;
+
+    // Array to keep track of all registered vendor addresses
+    address[] public registeredVendors;
 
     // Counter for product IDs (global or per vendor)
     uint256 private nextProductId = 1;
@@ -80,6 +86,9 @@ contract FYP_Contract is Ownable {
             vendorAddress: msg.sender,
             isRegistered: true
         });
+        
+        // Add vendor address to the array for tracking
+        registeredVendors.push(msg.sender);
         TotalVenders++;
 
         emit VendorRegistered(msg.sender, _name, _companyName, block.timestamp);
@@ -150,17 +159,64 @@ contract FYP_Contract is Ownable {
         return vendors[_vendorAddress].isRegistered;
     }
 
-   function getProductAndVendorByIndex(uint256 _index)
-    public
-    view
-    returns (Product memory, Vendor memory)
-{
-    require(_index < vendorProducts[msg.sender].length, "Invalid product index");
+    function getProductAndVendorByIndex(uint256 _index)
+        public
+        view
+        returns (Product memory, Vendor memory)
+    {
+        require(_index < vendorProducts[msg.sender].length, "Invalid product index");
 
-    Product memory product = vendorProducts[msg.sender][_index];
-    Vendor memory vendor = vendors[msg.sender];
+        Product memory product = vendorProducts[msg.sender][_index];
+        Vendor memory vendor = vendors[msg.sender];
 
-    return (product, vendor);
-}
+        return (product, vendor);
+    }
 
+    // Function to get details of all registered vendors
+    function totalVenderDetails() 
+        public 
+        view 
+        returns (Vendor[] memory) 
+    {
+        Vendor[] memory allVendors = new Vendor[](TotalVenders);
+        
+        for (uint256 i = 0; i < registeredVendors.length; i++) {
+            allVendors[i] = vendors[registeredVendors[i]];
+        }
+        
+        return allVendors;
+    }
+
+    // Function to get all products details listed by a specific vendor
+    function totalProductsOfVender(address _vendor) 
+        public 
+        view 
+        returns (Product[] memory) 
+    {
+        require(_vendor != address(0), "Invalid vendor address");
+        require(vendors[_vendor].isRegistered, "Vendor not registered");
+        
+        return vendorProducts[_vendor];
+    }
+
+    // Additional helper function to get the number of products for a vendor
+    function getVendorProductCount(address _vendor) 
+        public 
+        view 
+        returns (uint256) 
+    {
+        require(_vendor != address(0), "Invalid vendor address");
+        require(vendors[_vendor].isRegistered, "Vendor not registered");
+        
+        return vendorProducts[_vendor].length;
+    }
+
+    // Helper function to get all registered vendor addresses
+    function getAllVendorAddresses() 
+        public 
+        view 
+        returns (address[] memory) 
+    {
+        return registeredVendors;
+    }
 }
